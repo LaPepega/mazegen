@@ -7,7 +7,7 @@ fn main() {
     // Upper-left corner to lower-right corner
     let mut m = Maze::new(l, (0, 0), (4, 4));
 
-    m.generate((0, 0), None);
+    m.generate((0, 0), Direction::Down);
     for row in m.layout.iter() {
         let u: Vec<String> = row.iter().map(|c| c.as_str()).collect();
         println!("{:?}", u)
