@@ -185,11 +185,14 @@ impl Maze {
 
     // FIXME: All the annoying small bugs are gone, only the algorithm is shitty now
     // Returns the position generator moved to
-    pub fn generate(&mut self, pos: Point, dir: Direction) -> Point {
+    pub fn generate_step(&mut self, pos: Point, dir: Direction) -> Point {
+        // TODO: this is for debugging
         self.print();
         println!();
+
         // Check if current position is out of bounds
         let current_cell: &mut MazeCell = self.get_cell_mut(pos).expect("Bad pos");
+
         // Mark visited
         current_cell.set_flag(CellFlag::Visited, true);
 
@@ -212,7 +215,7 @@ impl Maze {
         possible_dirs.shuffle(&mut rand::thread_rng());
 
         for p in possible_dirs {
-            self.generate(next_position, p);
+            self.generate_step(next_position, p);
         }
 
         next_position
