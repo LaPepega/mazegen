@@ -10,7 +10,7 @@ pub enum CellFlag {
     Finish = 6,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Direction {
     Up = 0,    // -y
     Down = 1,  // +y
