@@ -41,9 +41,33 @@ impl MazeCell {
         }
     }
 
-    // FIXME: no idea if this works
+    pub fn as_str(&self) -> String {
+        let mut s: String = "".to_string();
+        if self.get_flag(CellFlag::Up) {
+            s.push('u');
+        } else {
+            s.push(' ');
+        }
+        if self.get_flag(CellFlag::Down) {
+            s.push('d');
+        } else {
+            s.push(' ');
+        }
+        if self.get_flag(CellFlag::Left) {
+            s.push('l');
+        } else {
+            s.push(' ');
+        }
+        if self.get_flag(CellFlag::Right) {
+            s.push('r');
+        } else {
+            s.push(' ');
+        }
+        s
+    }
+
     fn get_bit(&self, idx: u8) -> bool {
-        (self.0 & (1 << idx)) == 1
+        (self.0 & (0b1000_0000 >> idx)).count_ones() == 1
     }
 
     pub fn get_flag(&self, flag: CellFlag) -> bool {
@@ -56,7 +80,7 @@ impl MazeCell {
     }
 
     // Changes flag to b
-    // TODO: Maybe return self too?
+
     pub fn set_flag(&mut self, f: CellFlag, b: bool) {
         self.set_bit(f as usize, b);
     }
@@ -90,6 +114,12 @@ pub struct Maze {
 }
 
 impl Maze {
+    pub fn print(&self) {
+        for row in self.layout.iter() {
+            let u: Vec<String> = row.iter().map(|c| c.as_str()).collect();
+            println!("{:?}", u)
+        }
+    }
     // Creates a new maze
     pub fn new(layout: Vec<Vec<MazeCell>>, start: Point, end: Point) -> Self {
         Self {
@@ -100,23 +130,16 @@ impl Maze {
     }
 
     fn neighbor_pos(pos: Point, dir: Direction) -> Option<Point> {
-        // TODO: overflows
         match dir {
-            Direction::Down => Some((pos.0, pos.1 + 1)),
-            Direction::Up => match pos.1.checked_sub(1) {
-                Some(p) => Some((pos.0, p)),
-                None => None,
-            },
-            Direction::Right => match pos.0.checked_sub(1) {
-                Some(p) => Some((p, pos.1)),
-                None => None,
-            },
-            Direction::Left => Some((pos.0 + 1, pos.1)),
+            Direction::Down => Some((pos.0, pos.1 + 1)), //+y
+            Direction::Up => Some((pos.0, pos.1.checked_sub(1)?)), //-y
+            Direction::Left => Some((pos.0.checked_sub(1)?, pos.1)), //-x
+            Direction::Right => Some((pos.0 + 1, pos.1)), //+x
         }
     }
 
     // (direction to the cell, cell's position, cell object reference)
-    // FIXME: there can be no neighbors at pos
+
     fn neighbor(&self, pos: Point, dir: Direction) -> Option<(Direction, Point, &MazeCell)> {
         let np = Maze::neighbor_pos(pos, dir);
         Some((dir, np?, self.layout.get(np?.1)?.get(np?.0)?))
@@ -132,7 +155,7 @@ impl Maze {
     }
 
     // I *think* this is ok
-    // FIXME: there can be no neighbors at pos
+
     fn all_neighbors(&self, pos: Point) -> Vec<Option<(Direction, Point, &MazeCell)>> {
         vec![
             Maze::neighbor(self, pos, Direction::Up),
@@ -144,6 +167,8 @@ impl Maze {
 
     // Returns the position generator moved to
     pub fn generate(&mut self, pos: Point, dir: Direction) -> Point {
+        self.print();
+        println!();
         // Check if current position is out of bounds
         let current_cell: &mut MazeCell = self
             .layout
@@ -166,21 +191,21 @@ impl Maze {
         // Remove n->c wall
         next_cell.set_flag(dir.opposite().into(), false);
         // Choose next victim
-        let possible: Vec<(Direction, Point, &MazeCell)> = self
-            .all_neighbors(pos)
+        let mut possible_dirs: Vec<Direction> = self
+            .all_neighbors(next_position)
             .iter()
             .cloned()
-            .filter_map(|nbr| nbr)
+            .filter_map(|nbr| nbr) // Only leave existing neighbors and unwrap 'em
+            .filter(|p| !p.2.get_flag(CellFlag::Visited)) // Which haven't been visited
+            .map(|p| p.0) // Only need direction
             .collect();
-
-        if !possible.is_empty() {
-            self.generate(
-                next_position,
-                possible
-                    .choose(&mut rand::thread_rng())
-                    .expect("not_visited isn't empty so smthn deeply fucked up if u see this")
-                    .0,
-            );
+        // FIXME: Possible dirs remains the same when backtracking and doesn't
+        // account for newly visited cells
+        possible_dirs.shuffle(&mut rand::thread_rng());
+        if !possible_dirs.is_empty() {
+            for p in possible_dirs {
+                self.generate(next_position, p);
+            }
         }
         next_position
     }

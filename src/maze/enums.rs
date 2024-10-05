@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 pub enum CellFlag {
     Up = 0,
     Down = 1,
@@ -10,10 +12,10 @@ pub enum CellFlag {
 
 #[derive(Clone, Copy)]
 pub enum Direction {
-    Up = 0,
-    Down = 1,
-    Left = 2,
-    Right = 3,
+    Up = 0,    // -y
+    Down = 1,  // +y
+    Left = 2,  // -x
+    Right = 3, // +y
 }
 
 impl Direction {

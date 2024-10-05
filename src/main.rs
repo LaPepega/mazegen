@@ -9,7 +9,7 @@ fn main() {
 
     m.generate((0, 0), Direction::Down);
     for row in m.layout.iter() {
-        let u: Vec<u8> = row.iter().map(|c| c.0).collect();
+        let u: Vec<String> = row.iter().map(|c| c.as_str()).collect();
         println!("{:?}", u)
     }
 }
