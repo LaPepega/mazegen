@@ -165,19 +165,31 @@ impl Maze {
         ]
     }
 
+    pub fn get_cell(&self, pos: Point) -> Option<&MazeCell> {
+        Some(self.layout.get(pos.1)?.get(pos.0)?)
+    }
+
+    pub fn get_cell_mut(&mut self, pos: Point) -> Option<&mut MazeCell> {
+        Some(self.layout.get_mut(pos.1)?.get_mut(pos.0)?)
+    }
+
+    fn valid_dirs(&self, pos: Point) -> Vec<Direction> {
+        self.all_neighbors(pos)
+            .iter()
+            .cloned()
+            .filter_map(|nbr| nbr) // Only leave existing neighbors and unwrap 'em
+            .filter(|p| !p.2.get_flag(CellFlag::Visited)) // Which haven't been visited
+            .map(|p| p.0) // Only need direction
+            .collect()
+    }
+
     // FIXME: All the annoying small bugs are gone, only the algorithm is shitty now
     // Returns the position generator moved to
     pub fn generate(&mut self, pos: Point, dir: Direction) -> Point {
         self.print();
         println!();
         // Check if current position is out of bounds
-        let current_cell: &mut MazeCell = self
-            .layout
-            .get_mut(pos.1)
-            .expect("YPos is fucked up")
-            .get_mut(pos.0)
-            .expect("XPos is fucked up");
-
+        let current_cell: &mut MazeCell = self.get_cell_mut(pos).expect("Bad pos");
         // Mark visited
         current_cell.set_flag(CellFlag::Visited, true);
 
@@ -191,23 +203,18 @@ impl Maze {
 
         // Remove n->c wall
         next_cell.set_flag(dir.opposite().into(), false);
+
         // Choose next victim
-        let mut possible_dirs: Vec<Direction> = self
-            .all_neighbors(next_position)
-            .iter()
-            .cloned()
-            .filter_map(|nbr| nbr) // Only leave existing neighbors and unwrap 'em
-            .filter(|p| !p.2.get_flag(CellFlag::Visited)) // Which haven't been visited
-            .map(|p| p.0) // Only need direction
-            .collect();
+        let mut possible_dirs: Vec<Direction> = self.valid_dirs(next_position);
+
         // FIXME: Possible dirs remains the same when backtracking and doesn't
         // account for newly visited cells
         possible_dirs.shuffle(&mut rand::thread_rng());
-        if !possible_dirs.is_empty() {
-            for p in possible_dirs {
-                self.generate(next_position, p);
-            }
+
+        for p in possible_dirs {
+            self.generate(next_position, p);
         }
+
         next_position
     }
 }
