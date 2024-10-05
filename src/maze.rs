@@ -165,6 +165,7 @@ impl Maze {
         ]
     }
 
+    // FIXME: All the annoying small bugs are gone, only the algorithm is shitty now
     // Returns the position generator moved to
     pub fn generate(&mut self, pos: Point, dir: Direction) -> Point {
         self.print();
