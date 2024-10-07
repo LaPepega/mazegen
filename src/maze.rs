@@ -183,13 +183,17 @@ impl Maze {
             .collect()
     }
 
-    // FIXME: All the annoying small bugs are gone, only the algorithm is shitty now
-    // Returns the position generator moved to
-    pub fn generate_step(&mut self, pos: Point, dir: Direction) -> Point {
-        // TODO: this is for debugging
-        self.print();
-        println!();
+    pub fn generate(width: usize, height: usize, start: Point, end: Point) -> Self {
+        let layout = vec![vec![MazeCell(0b1111_0000); width]; height];
+        let mut maze = Maze::new(layout, start, end);
+        let mut dirs = maze.valid_dirs(start);
+        dirs.shuffle(&mut rand::thread_rng());
+        maze.generate_step(start, dirs[0]);
+        maze
+    }
 
+    // IT FUCKING WOOOOOOOOOOOOORKS LES'T GOOOOOOOOOO
+    pub fn generate_step(&mut self, pos: Point, dir: Direction) -> Point {
         // Check if current position is out of bounds
         let current_cell: &mut MazeCell = self.get_cell_mut(pos).expect("Bad pos");
 
@@ -207,15 +211,19 @@ impl Maze {
         // Remove n->c wall
         next_cell.set_flag(dir.opposite().into(), false);
 
+        next_cell.set_flag(CellFlag::Visited, true);
+
         // Choose next victim
         let mut possible_dirs: Vec<Direction> = self.valid_dirs(next_position);
 
-        // FIXME: Possible dirs remains the same when backtracking and doesn't
-        // account for newly visited cells
         possible_dirs.shuffle(&mut rand::thread_rng());
 
-        for p in possible_dirs {
-            self.generate_step(next_position, p);
+        while !possible_dirs.is_empty() {
+            self.generate_step(next_position, possible_dirs[0]);
+            // Backtracking
+
+            possible_dirs = self.valid_dirs(next_position);
+            possible_dirs.shuffle(&mut rand::thread_rng());
         }
 
         next_position
