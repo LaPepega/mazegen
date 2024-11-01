@@ -86,7 +86,7 @@ impl MazeCell {
     }
 
     // Constructs a [Cell] with specified parameters
-    pub fn with_flags(
+    pub fn with_bits(
         up: bool,
         down: bool,
         left: bool,
@@ -186,27 +186,28 @@ impl Maze {
     pub fn generate(width: usize, height: usize, start: Point, end: Point) -> Self {
         let layout = vec![vec![MazeCell(0b1111_0000); width]; height];
         let mut maze = Maze::new(layout, start, end);
-        let mut dirs = maze.valid_dirs(start);
-        dirs.shuffle(&mut rand::thread_rng());
-        maze.generate_step(start, dirs[0]);
+        let dirs = maze.valid_dirs(start);
+
+        maze.generate_step(
+            start,
+            dirs.choose(&mut rand::thread_rng())
+                .expect("No dirs on start")
+                .clone(),
+        );
         maze
     }
 
     // IT FUCKING WOOOOOOOOOOOOORKS LES'T GOOOOOOOOOO
-    pub fn generate_step(&mut self, pos: Point, dir: Direction) -> Point {
+    pub fn generate_step(&mut self, pos: Point, dir: Direction) {
         // Check if current position is out of bounds
         let current_cell: &mut MazeCell = self.get_cell_mut(pos).expect("Bad pos");
 
-        // Mark visited
         current_cell.set_flag(CellFlag::Visited, true);
 
         // Remove c->n wall
         current_cell.set_flag(dir.into(), false);
 
-        let (_, next_position, next_cell) = match self.neighbor_mut(pos, dir) {
-            Some(n) => n,
-            None => return pos,
-        };
+        let (_, next_position, next_cell) = self.neighbor_mut(pos, dir).expect("Invalid next pos");
 
         // Remove n->c wall
         next_cell.set_flag(dir.opposite().into(), false);
@@ -216,16 +217,17 @@ impl Maze {
         // Choose next victim
         let mut possible_dirs: Vec<Direction> = self.valid_dirs(next_position);
 
-        possible_dirs.shuffle(&mut rand::thread_rng());
-
         while !possible_dirs.is_empty() {
-            self.generate_step(next_position, possible_dirs[0]);
+            self.generate_step(
+                next_position,
+                possible_dirs
+                    .choose(&mut rand::thread_rng())
+                    .expect("No dirs")
+                    .clone(),
+            );
             // Backtracking
 
             possible_dirs = self.valid_dirs(next_position);
-            possible_dirs.shuffle(&mut rand::thread_rng());
         }
-
-        next_position
     }
 }
